@@ -133,7 +133,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--orange);
 .row .n{font-family:var(--font-display);font-weight:800;color:var(--orange-2);padding-top:24px;text-align:center;font-variant-numeric:tabular-nums}
 .r-part{grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 36px}
 .r-ev{grid-template-columns:30px 140px minmax(0,1.6fr) minmax(0,1fr) 140px minmax(0,1.4fr) 36px}
-.r-tl{grid-template-columns:30px 140px 110px minmax(0,1fr) auto 36px}
+.r-tl{grid-template-columns:44px 140px 105px minmax(0,1fr) 170px auto 36px}
 .r-pa{grid-template-columns:44px minmax(0,1fr) 36px}
 .row .x{margin-top:20px}
 @media (max-width:900px){.r-part,.r-ev,.r-tl{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.row .n{text-align:left;padding-top:0;grid-column:1/-1}.row .x{margin-top:0;justify-self:end;grid-column:-2/-1}.row .wide{grid-column:1/-1}}
@@ -179,6 +179,23 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--orange);
 .tag.rel{background:var(--orange);color:#fff}
 .tag.main{background:#fff;color:var(--iap)}
 
+
+.ltabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ltab{border:1.5px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:.88rem;cursor:pointer}
+.ltab b{color:var(--orange-2)}
+.ltab[aria-pressed="true"]{border-color:var(--orange);background:var(--peach)}
+.brrow{display:grid;grid-template-columns:14px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-s);background:var(--input)}
+.bdot{width:14px;height:14px;border-radius:50%;background:var(--bc);align-self:center}
+.bracts{display:flex;gap:6px;align-items:center}
+@media (max-width:900px){.brrow{grid-template-columns:14px minmax(0,1fr)}.brrow>*:not(.bdot){grid-column:2}.brrow .hint{grid-column:2!important}}
+.tlwrap{overflow-x:auto;padding:4px 2px 8px}
+.tlx{display:grid;gap:10px 14px;position:relative;width:max-content}
+.tlx .lane{grid-column:1/-1;position:relative;background:var(--subtle);border-radius:8px;border-left:5px solid var(--bc);min-height:140px}
+.tlx .lane::after{content:"";position:absolute;left:160px;right:10px;bottom:14px;height:3px;background:var(--iap);opacity:.25}
+.tlx .lname{grid-column:1;padding:10px 8px 10px 16px;font-weight:700;font-size:.88rem;display:grid;gap:3px;align-content:center;z-index:1}
+.tlx .lname .hint{font-weight:600;font-size:.74rem}
+.tlx .tli{width:auto;margin:8px 0 26px;z-index:1}
+.tlx svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:2}
 /* 5 porqués */
 .why-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;align-items:stretch}
 @media (max-width:620px){.why-row{grid-template-columns:minmax(0,1fr)}}
@@ -338,7 +355,7 @@ const blank=()=>({lang:'es',step:0,
  plan:{inicio:'',termino:'',lider:'',secretario:'',asesor:'',part:[{nombre:'',puesto:''}],g:GANTT.map(()=>({i:'',f:''}))},
  peepo:{P:[],E:[],Q:[],R:[],O:[]},
  evid:[],fotos:[],
- tl:[],pq:{},
+ tl:[],pq:{},lines:[{id:'L1',name:'',br:[{id:'B1',name:'',from:'',to:''}]}],tlCur:'L1',
  rs:{ac:[],de:[],co:[],fo:[]},
  pa:[],
  ll:{lec:[''],fal:[''],apr:[''],clave:''}
@@ -371,7 +388,7 @@ try{setTheme(localStorage.getItem(KEY+'-t'))}catch(e){setTheme(null)}
 
 /* ===== derivados ===== */
 const tlSorted=()=>[...S.tl].sort((a,b)=>((a.fecha||'9')+(a.hora||'99')).localeCompare((b.fecha||'9')+(b.hora||'99')));
-const relEvents=()=>tlSorted().filter(e=>e.rel&&has(e.t));
+const relEvents=()=>S.lines.flatMap(l=>tlLayout(l).ev).filter(e=>e.rel&&has(e.t));
 function pqOf(id){if(!S.pq[id])S.pq[id]={w:['','','','',''],c:'',ce:false};return S.pq[id]}
 function lastW(p){for(let i=p.w.length-1;i>=0;i--)if(has(p.w[i]))return tr(p.w[i]);return ''}
 function syncC(id){const p=pqOf(id);if(!p.ce)p.c=lastW(p)}
@@ -471,25 +488,62 @@ function v3(){const evOpts=[['',L('— Tipo —','— Type —')],...EVT.map((e,
   <div class="photos">${S.fotos.map((f,i)=>`<div class="ph"><img src="${f.data}" alt="${esc(f.caption||'Evidencia '+(i+1))}"><div class="cap"><input type="text" aria-label="${esc(L('Pie de foto','Caption'))} ${i+1}" data-b="fotos.${i}.caption" value="${esc(f.caption)}" placeholder="${esc(L('Pie de foto','Caption'))}"><button class="btn ghost sm" data-del="fotos:${i}">${esc(L('Quitar foto','Remove photo'))}</button></div></div>`).join('')}${S.fotos.length<MAX_PH?`<label class="drop" for="phIn"><b>${esc(L('Agregar fotos','Add photos'))}</b><span class="hint">${esc(L('Toca para elegir','Tap to choose'))}</span></label>`:''}</div><input type="file" id="phIn" accept="image/*" multiple hidden></div>
  ${nav(3)}</section>`}
 
-/* ===== 04 línea de tiempo ===== */
-function v4(){const s=tlSorted();
- return `<section class="panel">${head(4,L('Organización de la información y hechos relevantes','Organizing information and relevant facts'))}
- ${instr('La línea del tiempo considera la trazabilidad de los HECHOS. No plantees suposiciones: relata lo que pasó con evidencia. Marca como relevante lo que no debió ocurrir o se hizo de forma errada, y valida la secuencia con el personal involucrado.','The timeline traces FACTS. No assumptions: tell what happened with evidence. Mark as relevant what should not have happened or was done wrong, and validate the sequence with the people involved.')}
- <div class="card"><h3>${esc(L('Vista de la línea de tiempo','Timeline view'))}</h3>${s.length?`<div class="tlv">${s.map((e,i)=>`<div class="tli ${e.main?'main':e.rel?'rel':''}"><span class="when">${esc(fd(e.fecha))||'—'} ${esc(e.hora)}</span><span>${esc(e.t)||'…'}</span>${e.main?`<span class="tag main">${esc(L('Incidente crítico','Critical incident'))}</span>`:e.rel?`<span class="tag rel">${esc(L('Relevante','Relevant'))}</span>`:''}<span class="no">${i+1}</span></div>`).join('')}</div>`:`<p class="hint">${esc(L('Agrega los hechos abajo; aquí se ordenan solos por fecha y hora.','Add the facts below; they sort themselves by date and time here.'))}</p>`}</div>
- <div class="card"><h3>${esc(L('Hechos','Facts'))}</h3><div class="rows">${S.tl.map((e,i)=>`<div class="row r-tl"><span class="n">${i+1}</span>
-   <div class="field"><label for="tl${i}f">${esc(L('Fecha','Date'))}</label><input type="date" id="tl${i}f" data-b="tl.${i}.fecha" data-tl value="${esc(e.fecha)}"></div>
-   <div class="field"><label for="tl${i}h">${esc(L('Hora','Time'))}</label><input type="time" id="tl${i}h" data-b="tl.${i}.hora" data-tl value="${esc(e.hora)}"></div>
+/* ===== 04 línea de tiempo (varias líneas y caminos) ===== */
+let tlDelAsk=null;
+const BR_WEB=['var(--orange)','var(--c-ac)','var(--c-de)','var(--ok)','var(--c-co)'];
+const brColor=i=>BR_WEB[i%BR_WEB.length];
+function curLine(){let l=S.lines.find(x=>x.id===S.tlCur);if(!l){l=S.lines[0];S.tlCur=l.id}return l}
+const lineCode=l=>'LT '+(S.lines.indexOf(l)+1);
+const lineName=l=>tr(l.name)||`${L('Línea de tiempo','Timeline')} ${S.lines.indexOf(l)+1}`;
+const brName=(l,b)=>{const i=l.br.indexOf(b);return tr(b.name)||(i===0?L('Camino principal','Main path'):`${L('Camino','Path')} ${i+1}`)};
+function evTag(e){const l=S.lines.find(x=>x.id===e.line);if(!l)return '';const b=l.br.find(x=>x.id===e.br);return (S.lines.length>1||l.br.length>1)?`${lineCode(l)} · ${b?brName(l,b):''}`:''}
+const tkey=e=>(e.fecha||'9999-99-99')+' '+(e.hora||'99:99');
+function tlLayout(l){const ev=S.tl.map((e,i)=>({e,i})).filter(o=>o.e.line===l.id).sort((a,b)=>{const ka=tkey(a.e),kb=tkey(b.e);return ka<kb?-1:ka>kb?1:a.i-b.i});
+ const cols=[],pos={},num={};let last=null;
+ ev.forEach((o,n)=>{const k=tkey(o.e);const bi=Math.max(0,l.br.findIndex(b=>b.id===o.e.br));let c=cols.length-1;if(c<0||k!==last||cols[c].some(x=>x.bi===bi)){cols.push([]);c++}cols[c].push({e:o.e,bi});pos[o.e.id]={c,bi};num[o.e.id]=n+1;last=k});
+ return {ev:ev.map(o=>o.e),cols,pos,num}}
+function tlPairs(l,lay){const out=[];l.br.forEach(b=>{const evs=lay.ev.filter(e=>e.br===b.id);if(!evs.length)return;if(b.from&&lay.num[b.from])out.push([b.from,evs[0].id,'f']);if(b.to&&lay.num[b.to])out.push([evs[evs.length-1].id,b.to,'m'])});return out}
+function v4(){const l=curLine(),li=S.lines.indexOf(l),lay=tlLayout(l);
+ const tabs=S.lines.map(x=>`<button class="ltab" data-line="${x.id}" aria-pressed="${x.id===l.id}"><b>${esc(lineCode(x))}</b> ${esc(lineName(x))} <span class="hint">(${S.tl.filter(e=>e.line===x.id).length})</span></button>`).join('');
+ const evOpts=(b,ph)=>[['',ph],...lay.ev.filter(e=>e.br!==b.id).map(e=>[e.id,`#${lay.num[e.id]} · ${(fd(e.fecha)+' '+(e.hora||'')).trim()} · ${tr(e.t).slice(0,55)||'…'}`])];
+ const brs=l.br.map((b,bi)=>`<div class="brrow"><span class="bdot" style="--bc:${brColor(bi)}"></span>
+   <div class="field"><label for="br-${b.id}">${esc(bi===0?L('Camino base','Base path'):L('Nombre del camino','Path name'))}</label><input type="text" id="br-${b.id}" data-b="lines.${li}.br.${bi}.name" data-lname value="${esc(b.name)}" placeholder="${esc(brName(l,b))}"></div>
+   ${bi>0?`<div class="field"><label for="s-lines-${li}-br-${bi}-from">${esc(L('Se separa del hecho','Splits from fact'))}</label>${sel(`lines.${li}.br.${bi}.from`,evOpts(b,L('— Desde el inicio —','— From the start —')),b.from)}</div><div class="field"><label for="s-lines-${li}-br-${bi}-to">${esc(L('Se une al hecho','Joins fact'))}</label>${sel(`lines.${li}.br.${bi}.to`,evOpts(b,L('— No se une —','— Does not join —')),b.to)}</div>`:`<div class="hint" style="grid-column:span 2;align-self:center">${esc(L('Los demás caminos pueden separarse de este y volver a unirse.','Other paths can split from this one and join back.'))}</div>`}
+   <div class="bracts"><button class="btn add sm" data-addev="${b.id}">+ ${esc(L('Hecho aquí','Fact here'))}</button>${bi>0?`<button class="x" data-delbr="${bi}" aria-label="${esc(L('Quitar camino','Remove path'))}">×</button>`:''}</div></div>`).join('');
+ const brOpts=l.br.map(b=>[b.id,brName(l,b)]);
+ const rows=S.tl.map((e,i)=>({e,i})).filter(o=>o.e.line===l.id).map(({e,i})=>`<div class="row r-tl"><span class="n">#${lay.num[e.id]||'?'}</span>
+   <div class="field"><label for="tl${i}f">${esc(L('Fecha','Date'))}</label><input type="date" id="tl${i}f" data-b="tl.${i}.fecha" data-tl data-tlre value="${esc(e.fecha)}"></div>
+   <div class="field"><label for="tl${i}h">${esc(L('Hora','Time'))}</label><input type="time" id="tl${i}h" data-b="tl.${i}.hora" data-tl data-tlre value="${esc(e.hora)}"></div>
    <div class="field wide"><label for="tl${i}t">${esc(L('¿Qué pasó?','What happened?'))}</label><textarea id="tl${i}t" rows="2" data-b="tl.${i}.t" data-tl>${esc(e.t)}</textarea></div>
-   <div class="field"><span class="lab">${esc(L('Marcar','Mark'))}</span><label class="chk"><input type="checkbox" data-chk="tl.${i}.rel" ${e.rel?'checked':''}>${esc(L('Hecho relevante','Relevant fact'))}</label><label class="chk"><input type="radio" name="tlmain" data-main="${i}" ${e.main?'checked':''}>${esc(L('Es el incidente crítico','Is the critical incident'))}</label></div>
-   <button class="x" data-del="tl:${i}" aria-label="${esc(L('Quitar','Remove'))}">×</button></div>`).join('')}</div><button class="btn add" style="margin-top:8px" data-add="tl">+ ${esc(L('Hecho','Fact'))}</button></div>
+   <div class="field"><label for="s-tl-${i}-br">${esc(L('Camino','Path'))}</label>${sel(`tl.${i}.br`,brOpts,e.br)}</div>
+   <div class="field"><span class="lab">${esc(L('Marcar','Mark'))}</span><label class="chk"><input type="checkbox" data-chk="tl.${i}.rel" ${e.rel?'checked':''}>${esc(L('Hecho relevante','Relevant fact'))}</label><label class="chk"><input type="radio" name="tlmain-${l.id}" data-main="${i}" ${e.main?'checked':''}>${esc(L('Es el incidente crítico','Is the critical incident'))}</label></div>
+   <button class="x" data-del="tl:${i}" aria-label="${esc(L('Quitar','Remove'))}">×</button></div>`).sort((a,b)=>0);
+ const ordered=lay.ev.map(e=>rows[S.tl.filter(x=>x.line===l.id).indexOf(e)]).join('');
+ return `<section class="panel">${head(4,L('Organización de la información y hechos relevantes','Organizing information and relevant facts'))}
+ ${instr('La línea del tiempo considera la trazabilidad de los HECHOS. No plantees suposiciones: relata lo que pasó con evidencia. Usa varias líneas de tiempo para secuencias distintas (por ejemplo, antes y después del incidente) y caminos para lo que ocurrió en paralelo dentro de una misma línea (por ejemplo, operador y chofer). Marca como relevante lo que no debió ocurrir o se hizo de forma errada, y valida la secuencia con el personal involucrado.','The timeline traces FACTS. No assumptions: tell what happened with evidence. Use several timelines for separate sequences (for example, before and after the incident) and paths for what happened in parallel within one timeline (for example, operator and driver). Mark as relevant what should not have happened or was done wrong, and validate the sequence with the people involved.')}
+ <div class="ltabs">${tabs}<button class="btn add sm" id="addLine">+ ${esc(L('Línea de tiempo','Timeline'))}</button></div>
+ <div class="card"><div class="g2" style="align-items:end">${fld(`${lineCode(l)} · ${L('Nombre de la línea de tiempo','Timeline name')}`,`lines.${li}.name`,{ph:lineName(l)})}<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap" id="delLineBox">${S.lines.length>1?(tlDelAsk===l.id?`<span class="hint" style="align-self:center">${esc(L(`¿Borrar ${lineCode(l)} y sus ${lay.ev.length} hechos?`,`Delete ${lineCode(l)} and its ${lay.ev.length} facts?`))}</span><button class="btn red sm" id="delLineY">${esc(L('Sí, borrar','Yes, delete'))}</button><button class="btn ghost sm" id="delLineN">${esc(L('Cancelar','Cancel'))}</button>`:`<button class="btn sm" id="delLine">${esc(L('Borrar esta línea de tiempo','Delete this timeline'))}</button>`):''}</div></div></div>
+ <div class="card"><h3>${esc(L('Caminos de esta línea de tiempo','Paths in this timeline'))}</h3><p class="hint" style="margin:-4px 0 10px">${esc(L('Cada camino es un carril. Indica de qué hecho se separa y a qué hecho se une; en la vista se dibujan con flechas.','Each path is a lane. Choose the fact it splits from and the fact it joins; the view draws them with arrows.'))}</p><div class="rows">${brs}</div><button class="btn add sm" style="margin-top:8px" id="addBr">+ ${esc(L('Camino','Path'))}</button></div>
+ <div class="card"><h3>${esc(L('Vista de la línea de tiempo','Timeline view'))} · ${esc(lineCode(l))}</h3><div class="tlwrap" id="tlbox"></div></div>
+ <div class="card"><h3>${esc(L('Hechos','Facts'))} · ${esc(lineCode(l))}</h3><p class="hint" style="margin:-4px 0 10px">${esc(L('Se ordenan solos por fecha y hora.','They sort themselves by date and time.'))}</p><div class="rows">${ordered||`<p class="hint">${esc(L('Aún no hay hechos en esta línea. Agrégalos con “+ Hecho aquí” en el camino que corresponda.','No facts in this timeline yet. Add them with “+ Fact here” on the right path.'))}</p>`}</div><button class="btn add" style="margin-top:8px" data-addev="${l.br[0].id}">+ ${esc(L('Hecho','Fact'))}</button></div>
  ${nav(4)}</section>`}
+function drawTL(){const box=document.getElementById('tlbox');if(!box)return;const l=curLine(),lay=tlLayout(l),N=lay.cols.length;
+ if(!N){box.innerHTML=`<p class="hint" style="margin:0">${esc(L('Agrega hechos para ver la línea de tiempo.','Add facts to see the timeline.'))}</p>`;return}
+ let h=`<div class="tlx" style="grid-template-columns:160px repeat(${N},170px)">`;
+ l.br.forEach((b,bi)=>{h+=`<div class="lane" style="grid-row:${bi+1};--bc:${brColor(bi)}"></div><div class="lname" style="grid-row:${bi+1};color:${brColor(bi)}">${esc(brName(l,b))}${b.from&&lay.num[b.from]?`<span class="hint">${esc(L('Se separa de','Splits from'))} #${lay.num[b.from]}</span>`:''}${b.to&&lay.num[b.to]?`<span class="hint">${esc(L('Se une a','Joins'))} #${lay.num[b.to]}</span>`:''}</div>`});
+ lay.cols.forEach((col,c)=>col.forEach(({e,bi})=>{h+=`<div class="tli ${e.main?'main':e.rel?'rel':''}" data-tid="${e.id}" style="grid-row:${bi+1};grid-column:${c+2}"><span class="when">${esc(fd(e.fecha))||'—'} ${esc(e.hora)}</span><span>${esc(e.t)||'…'}</span>${e.main?`<span class="tag main">${esc(L('Incidente crítico','Critical incident'))}</span>`:e.rel?`<span class="tag rel">${esc(L('Relevante','Relevant'))}</span>`:''}<span class="no">#${lay.num[e.id]}</span></div>`}));
+ box.innerHTML=h+'<svg aria-hidden="true"></svg></div>';
+ requestAnimationFrame(()=>{const inner=box.querySelector('.tlx');if(!inner)return;const svg=inner.querySelector('svg'),rb=inner.getBoundingClientRect();const R=id=>{const el=inner.querySelector(`[data-tid="${id}"]`);if(!el)return null;const r=el.getBoundingClientRect();return {l:r.left-rb.left,r:r.right-rb.left,t:r.top-rb.top,b:r.bottom-rb.top,cx:(r.left+r.right)/2-rb.left,cy:(r.top+r.bottom)/2-rb.top}};
+  const col=getComputedStyle(document.documentElement).getPropertyValue('--orange').trim()||'#E8650E';let p='';
+  tlPairs(l,lay).forEach(([a,b,k])=>{const s=R(a),t=R(b);if(!s||!t)return;let d;const down=t.cy>s.cy;if(Math.abs(t.cy-s.cy)<2)d=`M${s.r} ${s.cy} L ${t.l-5} ${t.cy}`;else if(t.l<=s.r+2)d=`M${s.cx} ${down?s.b:s.t} L ${t.cx} ${down?t.t-5:t.b+5}`;else if(k==='f')d=`M${s.cx} ${down?s.b:s.t} L ${s.cx} ${t.cy} L ${t.l-5} ${t.cy}`;else d=`M${s.r} ${s.cy} L ${t.cx} ${s.cy} L ${t.cx} ${down?t.t-5:t.b+5}`;p+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2.2" stroke-dasharray="7 4" marker-end="url(#ta)"/>`});
+  svg.setAttribute('width',inner.scrollWidth);svg.setAttribute('height',inner.scrollHeight);svg.innerHTML=`<defs><marker id="ta" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="${col}"/></marker></defs>`+p})}
 
 /* ===== 05 5 porqués ===== */
 function v5(){const r=relEvents();
  return `<section class="panel">${head(5,L('Causas raíz de los hechos relevantes de la línea de tiempo','Root causes of the relevant timeline facts'))}
  ${instr('A cada hecho relevante aplica los “por qué” necesarios hasta llegar a un factor organizacional (el sistema), o hasta que ya no se pueda contestar. Pueden ser más de cinco.','Ask “why” as many times as needed for each relevant fact until you reach an organizational factor (the system), or until it can no longer be answered. It can be more than five.')}
  ${r.length?r.map((e,n)=>{const p=pqOf(e.id);return `<div class="card"><div class="why-row">
-   <div class="wbox h"><span class="lab">${esc(L('Hecho relevante','Relevant fact'))} ${n+1}</span><p>${esc(e.t)}</p><span class="hint">${esc(fd(e.fecha))} ${esc(e.hora)}</span></div>
+   <div class="wbox h"><span class="lab">${esc(L('Hecho relevante','Relevant fact'))} ${n+1}</span><p>${esc(e.t)}</p><span class="hint">${esc(fd(e.fecha))} ${esc(e.hora)}${evTag(e)?' · '+esc(evTag(e)):''}</span></div>
    ${p.w.map((w,i)=>`<div class="wbox w"><span class="lab">${esc(L('¿Por qué?','Why?'))} ${i+1}</span><textarea rows="3" aria-label="${esc(L('Por qué','Why'))} ${i+1}" data-b="pq.${e.id}.w.${i}" data-pq="${e.id}">${esc(w)}</textarea></div>`).join('')}
    <div class="wbox c"><span class="lab">${esc(L('Causa raíz','Root cause'))}</span><textarea rows="3" id="pqc-${e.id}" aria-label="${esc(L('Causa raíz','Root cause'))}" data-b="pq.${e.id}.c" data-pqc="${e.id}">${esc(p.c)}</textarea><span class="hint" style="color:#fff">${esc(p.ce?L('Editada a mano','Edited by hand'):L('Se llena con el último por qué','Fills in from the last why'))}</span></div>
  </div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn add sm" data-addw="${e.id}">+ ${esc(L('Otro ¿por qué?','Another why?'))}</button>${p.w.length>1?`<button class="btn ghost sm" data-delw="${e.id}">${esc(L('Quitar el último','Remove the last one'))}</button>`:''}<span class="hint" style="align-self:center">${p.w.length} ${esc(L('por qué','whys'))}</span></div></div>`}).join(''):`<div class="card"><p class="hint" style="margin:0">${esc(L('No hay hechos relevantes. En la sección 04 marca los hechos que no debieron ocurrir o se hicieron de forma errada.','No relevant facts yet. In section 04, mark the facts that should not have happened or were done wrong.'))}</p><button class="btn" style="margin-top:10px" data-nav="4">← 04 ${esc(L('Línea de tiempo','Timeline'))}</button></div>`}
@@ -498,7 +552,7 @@ function v5(){const r=relEvents();
 /* ===== vínculos múltiples ===== */
 const lk=x=>Array.isArray(x&&x.links)?x.links:[];
 const pr=p=>Array.isArray(p&&p.refs)?p.refs:[];
-function normalize(st){['de','co','fo'].forEach(k=>(st.rs[k]||[]).forEach(x=>{if(!Array.isArray(x.links))x.links=x.link?[x.link]:[];delete x.link}));(st.pa||[]).forEach(p=>{if(!Array.isArray(p.refs))p.refs=p.ref?[p.ref]:[];delete p.ref});Object.values(st.pq||{}).forEach(q=>{if(!Array.isArray(q.w)||!q.w.length)q.w=['']});return st}
+function normalize(st){if(!Array.isArray(st.lines)||!st.lines.length)st.lines=[{id:'L1',name:'',br:[{id:'B1',name:'',from:'',to:''}]}];st.lines.forEach(l=>{if(!Array.isArray(l.br)||!l.br.length)l.br=[{id:uid('B'),name:'',from:'',to:''}]});(st.tl||[]).forEach(e=>{let l=st.lines.find(x=>x.id===e.line);if(!l){l=st.lines[0];e.line=l.id}if(!l.br.some(b=>b.id===e.br))e.br=l.br[0].id});if(!st.lines.some(l=>l.id===st.tlCur))st.tlCur=st.lines[0].id;['de','co','fo'].forEach(k=>(st.rs[k]||[]).forEach(x=>{if(!Array.isArray(x.links))x.links=x.link?[x.link]:[];delete x.link}));(st.pa||[]).forEach(p=>{if(!Array.isArray(p.refs))p.refs=p.ref?[p.ref]:[];delete p.ref});Object.values(st.pq||{}).forEach(q=>{if(!Array.isArray(q.w)||!q.w.length)q.w=['']});return st}
 function multi(path,kinds,cur,ph){const chips=cur.map(id=>{const r=rtext(id);if(!r)return '';return `<span class="lchip k-${r.k}"><b>${r.code}</b> ${esc(tr(r.t).slice(0,48)||'…')}<button class="x" data-unl="${path}:${id}" aria-label="${esc(L('Quitar vínculo','Remove link'))}">×</button></span>`}).join('');
  const avail=kinds.flatMap(k=>S.rs[k].map((x,i)=>[x.id,`${rid(k,i)} · ${tr(x.t).slice(0,60)||'…'}`,x.id])).filter(o=>!cur.includes(o[0]));
  return `<div class="links">${chips}${avail.length?`<select data-addl="${path}" aria-label="${esc(ph)}"><option value="">+ ${esc(ph)}</option>${avail.map(o=>`<option value="${o[0]}" data-ref="${o[2]}">${esc(o[1])}</option>`).join('')}</select>`:''}</div>`}
@@ -613,8 +667,8 @@ function v9(){const d=execData(),i=S.info;const ul=a=>a.length?`<ul>${a.map(x=>`
 
 /* ===== render / eventos ===== */
 function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
-function render(){renderIdx();const m=document.getElementById('main');m.innerHTML=[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9][S.step]();wire(m);if(S.step===2)paintGantt();if(S.step===6||S.step===7)drawDiag()}
-const NEW={'plan.part':()=>({nombre:'',puesto:''}),evid:()=>({id:uid('e'),fecha:'',desc:'',resp:'',tipo:'',hallazgo:'',critico:false}),tl:()=>({id:uid('t'),fecha:S.info.fecha||'',hora:'',t:'',rel:false,main:false}),'rs.ac':()=>({id:uid('a'),t:'',tipo:''}),'rs.de':()=>({id:uid('d'),t:'',nivel:'',estado:'',links:[]}),'rs.co':()=>({id:uid('c'),t:'',tipo:'',links:[]}),'rs.fo':()=>({id:uid('f'),t:'',modo:'',el:'',links:[]}),pa:()=>({id:uid('p'),t:'',refs:[],q:[null,null,null],resp:'',fecha:'',jer:'',tipo:'',inv:'',just:'',via:''})};
+function render(){renderIdx();const m=document.getElementById('main');m.innerHTML=[v0,v1,v2,v3,v4,v5,v6,v7,v8,v9][S.step]();wire(m);if(S.step===2)paintGantt();if(S.step===6||S.step===7)drawDiag();if(S.step===4)drawTL()}
+const NEW={'plan.part':()=>({nombre:'',puesto:''}),evid:()=>({id:uid('e'),fecha:'',desc:'',resp:'',tipo:'',hallazgo:'',critico:false}),tl:()=>({line:curLine().id,br:curLine().br[0].id,id:uid('t'),fecha:S.info.fecha||'',hora:'',t:'',rel:false,main:false}),'rs.ac':()=>({id:uid('a'),t:'',tipo:''}),'rs.de':()=>({id:uid('d'),t:'',nivel:'',estado:'',links:[]}),'rs.co':()=>({id:uid('c'),t:'',tipo:'',links:[]}),'rs.fo':()=>({id:uid('f'),t:'',modo:'',el:'',links:[]}),pa:()=>({id:uid('p'),t:'',refs:[],q:[null,null,null],resp:'',fecha:'',jer:'',tipo:'',inv:'',just:'',via:''})};
 function wire(m){
  m.querySelectorAll('textarea').forEach(t=>{grow(t);t.addEventListener('input',()=>grow(t))});
  m.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>go(+b.dataset.nav));
@@ -622,7 +676,15 @@ function wire(m){
  m.querySelectorAll('[data-b]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>{setP(el.dataset.b,el.value);save();live(el);renderIdx()}));
  m.querySelectorAll('[data-chk]').forEach(el=>el.addEventListener('change',()=>{setP(el.dataset.chk,el.checked);save();renderIdx();if(el.dataset.chk.startsWith('tl.'))render()}));
  m.querySelectorAll('[data-radio]').forEach(el=>el.addEventListener('change',()=>{setP(el.dataset.radio,el.value);save();renderIdx()}));
- m.querySelectorAll('[data-main]').forEach(el=>el.addEventListener('change',()=>{S.tl.forEach((e,i)=>e.main=i===+el.dataset.main);save();render()}));
+ m.querySelectorAll('[data-main]').forEach(el=>el.addEventListener('change',()=>{const L0=S.tl[+el.dataset.main].line;S.tl.forEach((e,i)=>{if(e.line===L0)e.main=i===+el.dataset.main});save();render()}));
+ m.querySelectorAll('[data-line]').forEach(b=>b.onclick=()=>{S.tlCur=b.dataset.line;tlDelAsk=null;save();render()});
+ const aL=document.getElementById('addLine');if(aL)aL.onclick=()=>{const l={id:uid('L'),name:'',br:[{id:uid('B'),name:'',from:'',to:''}]};S.lines.push(l);S.tlCur=l.id;save();render();const n=document.querySelector(`[data-b="lines.${S.lines.length-1}.name"]`);if(n)n.focus()};
+ const aB=document.getElementById('addBr');if(aB)aB.onclick=()=>{curLine().br.push({id:uid('B'),name:'',from:'',to:''});save();render()};
+ m.querySelectorAll('[data-delbr]').forEach(b=>b.onclick=()=>{const l=curLine(),bi=+b.dataset.delbr,gone=l.br[bi];S.tl.forEach(e=>{if(e.line===l.id&&e.br===gone.id)e.br=l.br[0].id});l.br.splice(bi,1);save();render()});
+ m.querySelectorAll('[data-addev]').forEach(b=>b.onclick=()=>{const e=NEW.tl();e.br=b.dataset.addev;S.tl.push(e);save();render();const t=document.querySelector(`[data-b="tl.${S.tl.length-1}.t"]`);if(t){t.focus();t.scrollIntoView({block:'center'})}});
+ const dL=document.getElementById('delLine');if(dL)dL.onclick=()=>{tlDelAsk=curLine().id;render()};
+ const dY=document.getElementById('delLineY');if(dY)dY.onclick=()=>{const l=curLine();S.tl.filter(e=>e.line===l.id).forEach(e=>unlink(e.id));S.tl=S.tl.filter(e=>e.line!==l.id);S.lines=S.lines.filter(x=>x!==l);S.tlCur=S.lines[0].id;tlDelAsk=null;save();render()};
+ const dN=document.getElementById('delLineN');if(dN)dN.onclick=()=>{tlDelAsk=null;render()};
  m.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const p=b.dataset.add;const arr=getP(p);const mk=NEW[p]||(p.startsWith('peepo.')?()=>({id:uid('n'),t:'',ev:false}):()=>'');arr.push(mk());save();render();const last=[...document.querySelectorAll(`[data-b^="${p}.${arr.length-1}"]`)].find(x=>x.tagName!=='SELECT')||document.querySelector(`[data-b="${p}.${arr.length-1}"]`);if(last)last.focus()});
  m.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const [p,i]=b.dataset.del.split(':');const arr=getP(p);const gone=arr[+i];arr.splice(+i,1);if(gone&&gone.id)unlink(gone.id);save();render()});
  m.querySelectorAll('[data-toev]').forEach(b=>b.onclick=()=>{const [k,i]=b.dataset.toev.split(':');const it=S.peepo[k][+i];if(!has(it.t)){toast(L('Escribe primero la nota','Write the note first'));return}const e=NEW.evid();e.desc=tr(it.t);e.fecha=new Date().toISOString().slice(0,10);S.evid.push(e);it.ev=true;save();render();toast(L('Agregada al registro de evidencias','Added to the evidence log'))});
@@ -630,6 +692,7 @@ function wire(m){
  m.querySelectorAll('[data-unl]').forEach(b=>b.onclick=()=>{const k=b.dataset.unl.lastIndexOf(':');const path=b.dataset.unl.slice(0,k),id=b.dataset.unl.slice(k+1);setP(path,(getP(path)||[]).filter(t=>t!==id));save();render()});
  m.querySelectorAll('[data-addw]').forEach(b=>b.onclick=()=>{const q=pqOf(b.dataset.addw);q.w.push('');save();render();const t=document.querySelector(`[data-b="pq.${b.dataset.addw}.w.${q.w.length-1}"]`);if(t)t.focus()});
  m.querySelectorAll('[data-delw]').forEach(b=>b.onclick=()=>{const q=pqOf(b.dataset.delw);if(q.w.length>1)q.w.pop();syncC(b.dataset.delw);save();render()});
+ m.querySelectorAll('[data-tlre]').forEach(el=>el.addEventListener('change',()=>render()));
  m.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const [i,j,v]=b.dataset.q.split(':').map(Number);const p=S.pa[i];p.q=p.q||[null,null,null];p.q[j]=p.q[j]===!!v?null:!!v;save();render()});
  const ph=document.getElementById('phIn');if(ph)ph.onchange=()=>{addPhotos(ph.files);ph.value=''};
  const lx=document.getElementById('loadEx');if(lx)lx.onclick=()=>{const lang=S.lang;S=example();S.lang=lang;save();render();toast(L('Ejemplo cargado','Example loaded'))};
@@ -640,8 +703,9 @@ function wire(m){
  const jl=document.getElementById('jsonLoad');if(jl)jl.onclick=()=>document.getElementById('jsonIn').click();
  const rb=document.getElementById('resetBtn');if(rb)rb.onclick=()=>{document.getElementById('resetBox').innerHTML=`<p class="hint" style="margin:0 0 6px">${esc(L('¿Seguro? Se perderá lo que no hayas respaldado.','Sure? Anything not backed up will be lost.'))}</p><button class="btn red" id="rsY">${esc(L('Sí, borrar todo','Yes, clear all'))}</button> <button class="btn ghost" id="rsN">${esc(L('Cancelar','Cancel'))}</button>`;document.getElementById('rsY').onclick=()=>{const lang=S.lang;S=blank();S.lang=lang;save();render()};document.getElementById('rsN').onclick=render};
 }
-function unlink(id){['de','co','fo'].forEach(k=>S.rs[k].forEach(x=>{x.links=lk(x).filter(t=>t!==id)}));S.pa.forEach(p=>{p.refs=pr(p).filter(t=>t!==id)});delete S.pq[id]}
+function unlink(id){S.lines.forEach(l=>l.br.forEach(b=>{if(b.from===id)b.from='';if(b.to===id)b.to=''}));['de','co','fo'].forEach(k=>S.rs[k].forEach(x=>{x.links=lk(x).filter(t=>t!==id)}));S.pa.forEach(p=>{p.refs=pr(p).filter(t=>t!==id)});delete S.pq[id]}
 function live(el){const b=el.dataset.b;
+ if(S.step===4){if(/^tl\.\d+\.br$|^lines\.\d+\.br\.\d+\.(from|to)$/.test(b)){render();return}if(el.hasAttribute('data-tl')||el.hasAttribute('data-lname')||/^lines\.\d+\.name$/.test(b)){clearTimeout(live._t);live._t=setTimeout(drawTL,300)}}
  if(el.hasAttribute('data-gantt')||b.startsWith('plan.inicio')||b.startsWith('plan.termino'))paintGantt();
  if(el.dataset.pq){const id=el.dataset.pq;syncC(id);const c=document.getElementById('pqc-'+id);if(c&&!pqOf(id).ce){c.value=pqOf(id).c;grow(c)}}
  if(el.dataset.pqc){pqOf(el.dataset.pqc).ce=true}
@@ -679,7 +743,7 @@ class Drawer{
   const an=o.valign==='middle'?'ctr':o.valign==='bottom'?'b':'t';
   const txb=`<p:txBody><a:bodyPr wrap="square" lIns="${E_(0.07)}" rIns="${E_(0.07)}" tIns="${E_(0.05)}" bIns="${E_(0.05)}" anchor="${an}" rtlCol="0"><a:normAutofit/></a:bodyPr><a:lstStyle/>${P}</p:txBody>`;
   this.shp(o.geom||'rect',{x,y,w,h,fill:o.fill,line:o.line,lw:o.lw,txb})}
- line(x1,y1,x2,y2,col,arrow,w){const id=++SPID;const fh=x2<x1,fv=y2<y1;this.ln+=`<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="${id}" name="ICAM ${id}"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm${fh?' flipH="1"':''}${fv?' flipV="1"':''}><a:off x="${E_(Math.min(x1,x2))}" y="${E_(Math.min(y1,y2))}"/><a:ext cx="${E_(Math.abs(x2-x1))}" cy="${E_(Math.abs(y2-y1))}"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="${Math.round((w||1.5)*12700)}"><a:solidFill><a:srgbClr val="${col||'7A8494'}"/></a:solidFill>${arrow?'<a:tailEnd type="triangle" w="med" len="med"/>':''}</a:ln></p:spPr></p:cxnSp>`}
+ line(x1,y1,x2,y2,col,arrow,w,front){const id=++SPID;const fh=x2<x1,fv=y2<y1;this[front?'xml':'ln']+=`<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="${id}" name="ICAM ${id}"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm${fh?' flipH="1"':''}${fv?' flipV="1"':''}><a:off x="${E_(Math.min(x1,x2))}" y="${E_(Math.min(y1,y2))}"/><a:ext cx="${E_(Math.abs(x2-x1))}" cy="${E_(Math.abs(y2-y1))}"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="${Math.round((w||1.5)*12700)}"><a:solidFill><a:srgbClr val="${col||'7A8494'}"/></a:solidFill>${arrow?'<a:tailEnd type="triangle" w="med" len="med"/>':''}</a:ln></p:spPr></p:cxnSp>`}
  image(data,x,y,w,h){const id=++SPID;const rid='rIdIcamImg'+this.imgs.length;this.imgs.push({rid,data});this.xml+=`<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Evidencia ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${E_(x)}" y="${E_(y)}"/><a:ext cx="${E_(w)}" cy="${E_(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`}
  fitImage(f,bx,by,bw,bh){const k=Math.min(bw/f.w,bh/f.h),w=f.w*k,h=f.h*k;this.image(f.data,bx+(bw-w)/2,by+(bh-h)/2,w,h)}
  // tabla dibujada con celdas; rows: [[{t,fill,color,bold,align}|string]]
@@ -741,14 +805,26 @@ async function exportPpt(){
  await make(T.s03p,D=>{PEEPO.forEach((c,i)=>{const x=0.6+i*3.8;hdr(D,T_(c[1]).toUpperCase(),x,1.75,3.65,0.6,OR,16);D.text([{text:T_(c[2]),options:{bold:true,breakLine:true}},{text:T_(c[3]),options:{size:11,color:MU}}],x,2.35,3.65,1.0,{size:13,fill:PE2,align:'center',valign:'middle'});D.rect(x,3.35,3.65,6.75,PE);const it=S.peepo[c[0]].filter(n=>has(n.t));D.text(it.length?it.map(n=>({text:tr(n.t),options:{bullet:true,breakLine:true}})):' ',x+0.1,3.45,3.45,6.55,{size:14,space:6})})});
  // 03 evidencias
  {const ev=S.evid,per=12,pages=Math.max(1,Math.ceil(ev.length/per));for(let p=0;p<pages;p++)await make(T.s03e,D=>{const hd=['N°',L('Fecha de solicitud','Request date'),L('Descripción / detalle','Description / detail'),L('Responsable toma de evidencia','Evidence owner'),L('Tipo (foto / documento)','Type (photo / document)'),L('Hallazgos','Findings')].map(t=>({t,fill:OR,color:WH,bold:true,align:'center'}));const body=[];const n=ev.length?Math.min(ev.length,(p+1)*per):8;for(let i=p*per;i<n;i++){const e=ev[i]||{};body.push([{t:String(i+1),align:'center',bold:true},fd(e.fecha),tr(e.desc),tr(e.resp),e.tipo?L(e.tipo,EVT_EN[EVT.indexOf(e.tipo)]||e.tipo):'',{t:tr(e.hallazgo)+(e.critico?L('  (crítico)','  (critical)'):''),bold:!!e.critico}])}D.table([hd,...body],0.6,1.75,[0.7,2.0,5.6,2.6,2.0,5.9],{size:13,rowH:0.6,bottom:10.1})})}
- // 04 línea de tiempo
- {const ev=tlSorted().filter(e=>has(e.t)),per=14,pages=Math.max(1,Math.ceil(ev.length/per));for(let p=0;p<pages;p++)await make(T.s04,D=>{D.rect(0.3,5.52,19.4,0.1,RD);const ch=ev.slice(p*per,(p+1)*per);ch.forEach((e,j)=>{const row=j<7?0:1,col=j%7;const x=0.6+col*2.76,y=row?5.95:1.35,w=2.32,h=3.5;const main=e.main;D.text([{text:`${fd(e.fecha)}${e.hora?'  '+e.hora+' hrs.':''}`,options:{bold:true,color:main?WH:'C9540A',breakLine:true,size:12}},{text:tr(e.t),options:{color:main?WH:TX,breakLine:main||e.rel}},...(main?[{text:L('Incidente crítico','Critical incident'),options:{bold:true,color:WH}}]:e.rel?[{text:L('Hecho relevante','Relevant fact'),options:{bold:true,color:OR,size:11}}]:[])],x,y,w,h,{size:14,fill:main?RD:PE,line:e.rel&&!main?OR:PE2,lw:e.rel&&!main?2.5:0.75});D.ellipse(x+w/2-0.25,y+h+0.08,0.5,0.5,SL);D.text(String(p*per+j+1),x+w/2-0.25,y+h+0.08,0.5,0.5,{size:12,bold:true,color:WH,align:'center',valign:'middle',fit:false})});if(!ch.length)D.text('—',0.8,1.6,4,0.6,{size:18,color:MU})})}
+ // 04 líneas de tiempo (una o varias, con caminos en carriles)
+ {const BRC=['EA6A0E','2F6FB0','7B3FA0','16794A','7A8494'];
+  for(const l of S.lines){const lay=tlLayout(l),N=lay.cols.length,per=N<=9?Math.max(N,5):8,pages=Math.max(1,Math.ceil(N/per)),pairs=tlPairs(l,lay);
+   for(let p=0;p<pages;p++)await make(T.s04,D=>{
+    D.text([{text:lineCode(l)+'   ',options:{bold:true,color:OR}},{text:lineName(l),options:{bold:true}},...(pages>1?[{text:`   (${p+1}/${pages})`,options:{color:MU}}]:[])],0.6,1.0,16,0.55,{size:18,valign:'middle'});
+    const nb=l.br.length,top=1.7,avail=8.45,gl=0.18,lh=Math.min(4.25,(avail-(nb-1)*gl)/nb),x0=2.45,gap=0.2,cw=(19.6-x0-(per-1)*gap)/per,P={};
+    l.br.forEach((b,bi)=>{const y=top+bi*(lh+gl),c=BRC[bi%BRC.length];D.rect(0.4,y,19.25,lh,'F4F5F7');D.rect(0.4,y,0.09,lh,c);
+     const info=[{text:brName(l,b),options:{bold:true,color:c,breakLine:true}}];if(b.from&&lay.num[b.from])info.push({text:L('Se separa de','Splits from')+' #'+lay.num[b.from],options:{size:10,color:MU,breakLine:true}});if(b.to&&lay.num[b.to])info.push({text:L('Se une a','Joins')+' #'+lay.num[b.to],options:{size:10,color:MU}});
+     D.text(info,0.55,y+0.05,1.8,lh-0.1,{size:13,min:7,valign:'middle'});D.rect(x0-0.1,y+lh-0.31,19.6-x0+0.05,0.06,RD)});
+    lay.cols.slice(p*per,(p+1)*per).forEach((colArr,cc)=>colArr.forEach(({e,bi})=>{const y=top+bi*(lh+gl),x=x0+cc*(cw+gap),h=lh-0.62,main=e.main;P[e.id]={l:x,r:x+cw,t:y+0.08,b:y+0.08+h,cx:x+cw/2,cy:y+0.08+h/2};
+     D.text([{text:`${fd(e.fecha)}${e.hora?'  '+e.hora+' hrs.':''}`,options:{bold:true,color:main?WH:'C9540A',breakLine:true,size:11}},{text:tr(e.t),options:{color:main?WH:TX,breakLine:main||e.rel}},...(main?[{text:L('Incidente crítico','Critical incident'),options:{bold:true,color:WH}}]:e.rel?[{text:L('Hecho relevante','Relevant fact'),options:{bold:true,color:OR,size:10}}]:[])],x,y+0.08,cw,h,{size:13,min:6.5,fill:main?RD:PE,line:e.rel&&!main?OR:PE2,lw:e.rel&&!main?2.5:0.75});
+     D.ellipse(x+cw/2-0.2,y+lh-0.48,0.4,0.4,SL);D.text(String(lay.num[e.id]),x+cw/2-0.2,y+lh-0.48,0.4,0.4,{size:10,bold:true,color:WH,align:'center',valign:'middle',fit:false})}));
+    pairs.forEach(([a,b,k])=>{const s=P[a],t=P[b];if(!s||!t)return;const down=t.cy>s.cy;if(Math.abs(t.cy-s.cy)<0.02)D.line(s.r,s.cy,t.l,t.cy,OR,true,2.25,true);else if(t.l<=s.r+0.05)D.line(s.cx,down?s.b:s.t,t.cx,down?t.t:t.b,OR,true,2.25,true);else if(k==='f'){D.line(s.cx,down?s.b:s.t,s.cx,t.cy,OR,false,2.25,true);D.line(s.cx,t.cy,t.l,t.cy,OR,true,2.25,true)}else{D.line(s.r,s.cy,t.cx,s.cy,OR,false,2.25,true);D.line(t.cx,s.cy,t.cx,down?t.t:t.b,OR,true,2.25,true)}});
+    if(!N)D.text('—',2.6,2.0,4,0.6,{size:18,color:MU})})}}
  // 05 5 porqués (los que sean necesarios)
  {const r=relEvents();const pages=[];let cur=[];r.forEach(e=>{const n=pqOf(e.id).w.map(tr).reduce((a,v,i)=>has(v)?i+1:a,0);if(n>5){if(cur.length){pages.push(cur);cur=[]}pages.push([e])}else{cur.push(e);if(cur.length===2){pages.push(cur);cur=[]}}});if(cur.length)pages.push(cur);if(!pages.length)pages.push([]);let num=0;
   for(const pgE of pages)await make(T.s05,D=>{const single=pgE.length===1&&pqOf(pgE[0].id).w.map(tr).reduce((a,v,i)=>has(v)?i+1:a,0)>5;pgE.forEach((e,j)=>{num++;const q=pqOf(e.id);const ws=q.w.map(tr);const last=ws.reduce((a,v,i)=>has(v)?i:a,-1);const n=Math.max(1,last+1);
-   if(!single){const y=1.35+j*4.4,h=3.9;D.text([{text:L('HECHO RELEVANTE','RELEVANT FACT')+` ${num}`,options:{bold:true,color:'C9540A',breakLine:true,size:12}},{text:tr(e.t)}],0.6,y,3.0,h,{size:15,fill:PE});const cw=Math.min(2.7,(19.4-3.9-3.2-n*0.4)/n);ws.slice(0,n).forEach((w,k)=>{const x=3.95+k*(cw+0.4);D.geom('rightArrow',x-0.36,y+h/2-0.17,0.3,0.34,'B6BCC6');D.text([{text:L('¿POR QUÉ?','WHY?')+` ${k+1}`,options:{bold:true,color:RD,breakLine:true,size:12}},{text:w||'—'}],x,y,cw,h,{size:15,fill:GR})});const cx=3.95+n*(cw+0.4);D.geom('rightArrow',cx-0.36,y+h/2-0.17,0.3,0.34,'B6BCC6');D.text([{text:L('CAUSA RAÍZ','ROOT CAUSE'),options:{bold:true,breakLine:true,size:12}},{text:nz(q.c)}],cx,y,19.4-cx,h,{size:15,fill:OR,color:WH});return}
+   if(!single){const y=1.35+j*4.4,h=3.9;D.text([{text:L('HECHO RELEVANTE','RELEVANT FACT')+` ${num}`,options:{bold:true,color:'C9540A',breakLine:true,size:12}},...(evTag(e)?[{text:evTag(e),options:{color:MU,breakLine:true,size:10}}]:[]),{text:tr(e.t)}],0.6,y,3.0,h,{size:15,fill:PE});const cw=Math.min(2.7,(19.4-3.9-3.2-n*0.4)/n);ws.slice(0,n).forEach((w,k)=>{const x=3.95+k*(cw+0.4);D.geom('rightArrow',x-0.36,y+h/2-0.17,0.3,0.34,'B6BCC6');D.text([{text:L('¿POR QUÉ?','WHY?')+` ${k+1}`,options:{bold:true,color:RD,breakLine:true,size:12}},{text:w||'—'}],x,y,cw,h,{size:15,fill:GR})});const cx=3.95+n*(cw+0.4);D.geom('rightArrow',cx-0.36,y+h/2-0.17,0.3,0.34,'B6BCC6');D.text([{text:L('CAUSA RAÍZ','ROOT CAUSE'),options:{bold:true,breakLine:true,size:12}},{text:nz(q.c)}],cx,y,19.4-cx,h,{size:15,fill:OR,color:WH});return}
    // muchos porqués: el hecho arriba y los porqués en filas de 5
-   D.text([{text:L('HECHO RELEVANTE','RELEVANT FACT')+` ${num}:  `,options:{bold:true,color:'C9540A'}},{text:tr(e.t)}],0.6,1.3,18.8,0.75,{size:15,fill:PE,valign:'middle'});const items=[...ws.slice(0,n).map((w,k)=>({t:w||'—',h:L('¿POR QUÉ?','WHY?')+` ${k+1}`,c:0})),{t:nz(q.c),h:L('CAUSA RAÍZ','ROOT CAUSE'),c:1}];const per=5,rows=Math.ceil(items.length/per),gap=0.45,cw=(18.8-(per-1)*gap)/per,rh=Math.min(3.6,(10.1-2.25-(rows-1)*0.3)/rows);
+   D.text([{text:L('HECHO RELEVANTE','RELEVANT FACT')+` ${num}:  `,options:{bold:true,color:'C9540A'}},{text:tr(e.t)},...(evTag(e)?[{text:'   ('+evTag(e)+')',options:{color:MU,size:11}}]:[])],0.6,1.3,18.8,0.75,{size:15,fill:PE,valign:'middle'});const items=[...ws.slice(0,n).map((w,k)=>({t:w||'—',h:L('¿POR QUÉ?','WHY?')+` ${k+1}`,c:0})),{t:nz(q.c),h:L('CAUSA RAÍZ','ROOT CAUSE'),c:1}];const per=5,rows=Math.ceil(items.length/per),gap=0.45,cw=(18.8-(per-1)*gap)/per,rh=Math.min(3.6,(10.1-2.25-(rows-1)*0.3)/rows);
    items.forEach((it,k)=>{const rr=Math.floor(k/per),cc=k%per;const x=0.6+cc*(cw+gap),y=2.25+rr*(rh+0.3);if(cc>0)D.geom('rightArrow',x-gap+0.06,y+rh/2-0.17,gap-0.12,0.34,'B6BCC6');D.text([{text:it.h,options:{bold:true,color:it.c?WH:RD,breakLine:true,size:12}},{text:it.t}],x,y,cw,rh,{size:14,fill:it.c?OR:GR,color:it.c?WH:TX})})});if(!r.length)D.text(L('Sin hechos relevantes marcados en la línea de tiempo.','No relevant facts marked in the timeline.'),0.8,1.6,10,0.6,{size:18,color:MU})})}
  // 06 Reason
  const reasonDraw=(D,withP)=>{const LY=layoutReason();const plans=withP?paLayout():[];const cols=[['fo',L('Factores organizacionales','Organizational factors'),L('¿Qué del sistema no existe o no está definido? ¿Qué reglas faltan? ¿Se cumple o se supervisa?','What in the system is missing or undefined? Missing rules? Is it followed and supervised?')],['co',L('Condiciones de la tarea o entorno','Task or environment conditions'),L('¿Qué condiciones físicas, operativas o humanas influyeron?','Which physical, operational or human conditions influenced?')],['ac',L('Acciones individuales o de equipo','Individual or team actions'),L('¿Qué hizo la persona o equipo? Sin juicio.','What did the person or team do? No judgment.')],['de',L('Defensas o barreras ausentes / fallidas','Absent / failed defenses or barriers'),L('¿Qué debía evitarlo y no existía o falló?','What should have prevented it and was missing or failed?')]];
@@ -811,6 +887,10 @@ function example(){const e=blank();
  e.evid=[ev('Registro de inducciones de contratistas','RH','Documento','El operador suplente no recibió la inducción: se realiza solo una vez por semana.',true),ev('Medición de iluminación del patio','Seguridad','Inspección','Luminarias sucias, sin limpieza en 6 meses.',true),ev('Declaraciones de testigos','Secretario ICAM','Declaración','El chofer bajó de su camión sin chaleco y caminó por fuera de las áreas demarcadas.',false),ev('Fotos de la zona de despacho','Seguridad','Foto','No hay señalética de velocidad ni segregación peatonal.',true)];
  const t=(h,txt,rel,main)=>({id:uid('t'),fecha:'2026-09-17',hora:h,t:txt,rel:!!rel,main:!!main});
  e.tl=[t('19:00','Operador de grúa de empresa contratista ingresa en reemplazo de un operador enfermo.',1),t('20:00','El operador inicia sin recibir la inducción inicial del área.',1),t('22:00','Chofer de camión ingresa al patio de carga y se estaciona esperando carga.'),t('23:00','Supervisor de despacho recorre el área revisando embarques; no supervisa tránsito.'),t('23:25','Chofer desciende del camión sin chaleco reflectante.',1),t('23:25','Chofer circula por el área de embarque, que no está demarcada ni segregada.',1),t('23:28','Operador maneja a 40 km/h en zona de 20 km/h en turno de noche.',1),t('23:30','Chofer es atropellado por la grúa horquilla en el área de despacho.',0,1)];
+ e.lines=[{id:'L1',name:'Secuencia previa al incidente',br:[{id:'B1',name:'Operador de grúa horquilla',from:'',to:''},{id:'B2',name:'Chofer de camión externo',from:'',to:''}]},{id:'L2',name:'Respuesta posterior al incidente',br:[{id:'B3',name:'Atención al lesionado',from:'',to:''},{id:'B4',name:'Control del área',from:'',to:''}]}];e.tlCur='L1';
+ e.tl.forEach(x=>{x.line='L1';x.br='B1'});[2,4,5].forEach(k=>e.tl[k].br='B2');e.lines[0].br[1].to=e.tl[7].id;
+ const t2=(h,txt,br,d)=>({id:uid('t'),fecha:d||'2026-09-17',hora:h,t:txt,rel:false,main:false,line:'L2',br});const p0=t2('23:32','Se detiene la operación en el patio de carga.','B3');
+ e.tl.push(p0,t2('23:33','El supervisor da primeros auxilios al chofer.','B3'),t2('23:35','Se solicita ambulancia; llega a las 23:50 y traslada al lesionado.','B3'),t2('23:40','Se acordona el área y se preservan evidencias (fotos y testigos).','B4'),t2('23:55','Pruebas de alcohol y drogas al operador; resultado negativo.','B4'),t2('02:10','Se reanuda la operación con un señalero en la zona.','B4','2026-09-18'));e.lines[1].br[1].from=p0.id;
  const r=e.tl;e.pq={};const W=(id,w)=>{e.pq[id]={w:w.concat(['','','','','']).slice(0,5),c:'',ce:false};e.pq[id].c=w[w.length-1]};
  W(r[1].id,['La inducción se da solo un día por semana','No hay inducción obligatoria el primer día','El sistema de inducción no contempla reemplazos de último momento']);
  W(r[4].id,['El chofer no conocía la norma de uso de chaleco','No recibió inducción como visita','No existe inducción para choferes externos']);
